@@ -102,7 +102,30 @@
     <ul class="history-list" id="historyList"></ul>
   </section>
 
+  <section class="sync-wrap">
+    <h2>Synchronisation</h2>
+
+    <div id="syncInactive">
+      <p class="sync-hint">Relie cet appareil à tes autres appareils pour partager les mêmes tâches.</p>
+      <button type="button" class="sync-btn" id="createSyncBtn">Créer un code sur cet appareil</button>
+      <div class="sync-join-row">
+        <input type="text" id="joinSyncInput" placeholder="…ou coller un code existant" autocomplete="off">
+        <button type="button" class="ghost-btn" id="joinSyncBtn">Rejoindre</button>
+      </div>
+    </div>
+
+    <div id="syncActive" hidden>
+      <p class="sync-hint">Synchronisation active. Saisis ce code sur tes autres appareils :</p>
+      <div class="sync-code-row">
+        <code id="syncCodeDisplay"></code>
+        <button type="button" class="ghost-btn" id="copySyncBtn">Copier</button>
+      </div>
+      <p class="sync-status" id="syncStatus"></p>
+      <button type="button" class="ghost-btn" id="disableSyncBtn">Désactiver la synchronisation</button>
+    </div>
+  </section>
+
 </div>
-<script src="app.js"></script>
+<script src="app.js" type="module"></script>
 </body>
 </html>

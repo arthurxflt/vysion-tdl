@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Each device that knows the (long, random) sync code can read/write
+    // that single document. There's no user login — the code itself is
+    // the shared secret, similar to an unlisted share link.
+    match /syncs/{syncCode} {
+      allow read, write: if syncCode.size() >= 20;
+    }
+  }
+}

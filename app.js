@@ -1,6 +1,25 @@
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js';
+import {
+  getFirestore, doc, setDoc, onSnapshot,
+} from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  projectId: 'vysion-tdl',
+  appId: '1:20229848862:web:a896cbb9531d3982c0d30f',
+  storageBucket: 'vysion-tdl.firebasestorage.app',
+  apiKey: 'AIzaSyATrJYs5Mga70Jp6B1X5V2bV6gKX14T2JA',
+  authDomain: 'vysion-tdl.firebaseapp.com',
+  messagingSenderId: '20229848862',
+  measurementId: 'G-G7LC5L2MG5',
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+
 const TASKS_KEY = 'pareto-todo-tasks-v2';
 const LEGACY_TASKS_KEY = 'pareto-todo-tasks-v1';
 const RECURRING_KEY = 'pareto-todo-recurring-v1';
+const SYNC_CODE_KEY = 'pareto-todo-sync-code';
 const PRIORITY_THRESHOLD = 8;
 const MATERIALIZE_DAYS_AHEAD = 30;
 
@@ -33,6 +52,15 @@ const upcomingWrap = document.getElementById('upcomingWrap');
 const upcomingList = document.getElementById('upcomingList');
 const historyWrap = document.getElementById('historyWrap');
 const historyList = document.getElementById('historyList');
+const syncInactiveEl = document.getElementById('syncInactive');
+const syncActiveEl = document.getElementById('syncActive');
+const createSyncBtn = document.getElementById('createSyncBtn');
+const joinSyncInput = document.getElementById('joinSyncInput');
+const joinSyncBtn = document.getElementById('joinSyncBtn');
+const syncCodeDisplay = document.getElementById('syncCodeDisplay');
+const copySyncBtn = document.getElementById('copySyncBtn');
+const disableSyncBtn = document.getElementById('disableSyncBtn');
+const syncStatusEl = document.getElementById('syncStatus');
 
 function pad(n) { return String(n).padStart(2, '0'); }
 
@@ -121,6 +149,7 @@ function loadTasks() {
 
 function saveTasks() {
   localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+  pushToCloud();
 }
 
 function loadRecurringTasks() {
@@ -133,6 +162,7 @@ function loadRecurringTasks() {
 
 function saveRecurringTasks() {
   localStorage.setItem(RECURRING_KEY, JSON.stringify(recurringTasks));
+  pushToCloud();
 }
 
 let tasks = loadTasks();
@@ -140,6 +170,68 @@ let recurringTasks = loadRecurringTasks();
 let selectedDate = todayKey();
 let selectedTaskDate = todayKey();
 const selectedWeekdays = new Set();
+
+let syncCode = localStorage.getItem(SYNC_CODE_KEY) || null;
+let syncUnsubscribe = null;
+let lastSyncedAt = null;
+
+function pushToCloud() {
+  if (!syncCode) return;
+  const updatedAt = Date.now();
+  lastSyncedAt = updatedAt;
+  setDoc(doc(db, 'syncs', syncCode), { tasks, recurringTasks, updatedAt }).catch(() => {
+    syncStatusEl.textContent = "Synchro en attente (pas de réseau ?)";
+  });
+}
+
+function applyRemoteState(data) {
+  lastSyncedAt = data.updatedAt;
+  tasks = data.tasks || [];
+  recurringTasks = data.recurringTasks || [];
+  localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+  localStorage.setItem(RECURRING_KEY, JSON.stringify(recurringTasks));
+  carryOverUnfinished();
+  materializeRecurring();
+  render();
+}
+
+function startSync(code) {
+  syncCode = code;
+  localStorage.setItem(SYNC_CODE_KEY, code);
+  if (syncUnsubscribe) syncUnsubscribe();
+  syncUnsubscribe = onSnapshot(
+    doc(db, 'syncs', code),
+    (snap) => {
+      if (!snap.exists()) {
+        pushToCloud();
+        syncStatusEl.textContent = 'Connecté — en attente du premier autre appareil.';
+        return;
+      }
+      const data = snap.data();
+      if (data.updatedAt !== lastSyncedAt) applyRemoteState(data);
+      syncStatusEl.textContent = 'Connecté — dernière synchro : ' + new Date().toLocaleTimeString('fr-FR');
+    },
+    () => {
+      syncStatusEl.textContent = 'Connexion à la synchro impossible pour le moment.';
+    }
+  );
+  updateSyncUI();
+}
+
+function stopSync() {
+  if (syncUnsubscribe) syncUnsubscribe();
+  syncUnsubscribe = null;
+  syncCode = null;
+  localStorage.removeItem(SYNC_CODE_KEY);
+  updateSyncUI();
+}
+
+function updateSyncUI() {
+  const active = !!syncCode;
+  syncInactiveEl.hidden = active;
+  syncActiveEl.hidden = !active;
+  if (active) syncCodeDisplay.textContent = syncCode;
+}
 
 function tasksForDate(dateKey) {
   return tasks.filter(t => t.date === dateKey);
@@ -557,9 +649,39 @@ dateJumpInput.addEventListener('change', () => {
   if (dateJumpInput.value) goToDate(dateJumpInput.value);
 });
 
+createSyncBtn.addEventListener('click', () => {
+  const code = crypto.randomUUID().replace(/-/g, '');
+  startSync(code);
+});
+
+joinSyncBtn.addEventListener('click', () => {
+  const code = joinSyncInput.value.trim();
+  if (code.length < 20) {
+    alert('Ce code ne semble pas valide — colle-le tel quel depuis ton autre appareil.');
+    return;
+  }
+  joinSyncInput.value = '';
+  startSync(code);
+});
+
+copySyncBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(syncCode).then(() => {
+    copySyncBtn.textContent = 'Copié !';
+    setTimeout(() => { copySyncBtn.textContent = 'Copier'; }, 1500);
+  });
+});
+
+disableSyncBtn.addEventListener('click', () => {
+  if (confirm('Désactiver la synchronisation sur cet appareil ? Tes tâches restent en local.')) {
+    stopSync();
+  }
+});
+
 carryOverUnfinished();
 materializeRecurring();
 render();
+updateSyncUI();
+if (syncCode) startSync(syncCode);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
