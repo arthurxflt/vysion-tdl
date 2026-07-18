@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vysion TDL</title>
+<meta name="theme-color" content="#6c5ce7">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="header">
+    <h1>Vysion TDL</h1>
+    <img src="logo-header.png" alt="Vysion TDL" class="header-logo">
+  </header>
+
+  <section class="day-nav">
+    <button class="nav-arrow" id="prevDayBtn" type="button" aria-label="Jour précédent">‹</button>
+    <div class="day-nav-center">
+      <span class="day-nav-relative" id="dayRelative">Aujourd'hui</span>
+      <input type="date" id="dateJump" class="date-jump-input">
+    </div>
+    <button class="nav-arrow" id="nextDayBtn" type="button" aria-label="Jour suivant">›</button>
+  </section>
+  <button class="ghost-btn today-btn" id="todayBtn" type="button" hidden>Revenir à aujourd'hui</button>
+
+  <section class="score-card">
+    <div class="score-top">
+      <span class="score-value" id="scoreValue">0%</span>
+      <span class="score-label" id="scoreLabel">Aucune tâche pour l'instant</span>
+    </div>
+    <div class="score-bar">
+      <div class="score-bar-fill" id="scoreBarFill"></div>
+    </div>
+    <div class="score-sub" id="scoreSub"></div>
+    <div class="priority-warning" id="priorityWarning" hidden>⚠️ Pas de tâche prioritaire ce jour-là — pense à l'essentiel avant les détails.</div>
+  </section>
+
+  <form class="add-form" id="addForm">
+    <input type="text" id="taskTitle" placeholder="Nouvelle tâche…" autocomplete="off" required maxlength="200">
+
+    <div class="repeat-row">
+      <label for="repeatMode">Répétition</label>
+      <select id="repeatMode">
+        <option value="once">Une seule fois</option>
+        <option value="daily">Tous les jours</option>
+        <option value="custom">Certains jours</option>
+      </select>
+    </div>
+
+    <div class="weekday-picker" id="weekdayPicker" hidden>
+      <button type="button" class="weekday-chip" data-day="1">Lun</button>
+      <button type="button" class="weekday-chip" data-day="2">Mar</button>
+      <button type="button" class="weekday-chip" data-day="3">Mer</button>
+      <button type="button" class="weekday-chip" data-day="4">Jeu</button>
+      <button type="button" class="weekday-chip" data-day="5">Ven</button>
+      <button type="button" class="weekday-chip" data-day="6">Sam</button>
+      <button type="button" class="weekday-chip" data-day="0">Dim</button>
+    </div>
+
+    <div class="date-picker-row" id="datePickerRow">
+      <label>Pour le</label>
+      <div class="day-chips" id="dayChips"></div>
+      <div class="other-date-row">
+        <button type="button" class="ghost-btn" id="otherDateToggle">Autre date…</button>
+        <input type="date" id="taskDate" class="date-fallback-input" hidden>
+      </div>
+    </div>
+
+    <div class="weight-row">
+      <label for="taskWeight">Importance</label>
+      <input type="range" id="taskWeight" min="1" max="10" value="5" step="1">
+      <span class="weight-value" id="weightValue">5</span>
+    </div>
+    <button type="submit">Ajouter</button>
+  </form>
+
+  <section class="task-list-wrap">
+    <div class="list-header">
+      <h2 id="listTitle">Tâches du jour</h2>
+    </div>
+    <ul class="task-list" id="taskList"></ul>
+    <p class="empty-state" id="emptyState">Aucune tâche prévue pour ce jour.</p>
+  </section>
+
+  <section class="recurring-wrap" id="recurringWrap" hidden>
+    <h2>Tâches récurrentes</h2>
+    <ul class="recurring-list" id="recurringList"></ul>
+  </section>
+
+  <section class="upcoming-wrap" id="upcomingWrap" hidden>
+    <h2>À venir</h2>
+    <div class="upcoming-days" id="upcomingList"></div>
+  </section>
+
+  <section class="history-wrap" id="historyWrap" hidden>
+    <h2>Historique</h2>
+    <ul class="history-list" id="historyList"></ul>
+  </section>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
