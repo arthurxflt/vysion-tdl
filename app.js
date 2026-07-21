@@ -22,6 +22,7 @@ const RECURRING_KEY = 'pareto-todo-recurring-v1';
 const SYNC_CODE_KEY = 'pareto-todo-sync-code';
 const PRIORITY_THRESHOLD = 8;
 const MATERIALIZE_DAYS_AHEAD = 30;
+const UPCOMING_HIDE_RECURRING_DAYS = 4;
 
 const taskListEl = document.getElementById('taskList');
 const emptyStateEl = document.getElementById('emptyState');
@@ -521,8 +522,19 @@ function buildDayListItem(dateKey) {
   return li;
 }
 
+// Recurring tasks that repeat very often (e.g. every day) are easy to
+// remember on their own — showing them weeks out in "À venir" just buries
+// the one-off or rare tasks that actually need a heads-up.
+function isFrequentRecurring(task) {
+  if (!task.recurringId) return false;
+  const rt = recurringTasks.find(r => r.id === task.recurringId);
+  return !!rt && rt.days.length >= UPCOMING_HIDE_RECURRING_DAYS;
+}
+
 function buildUpcomingDayBlock(dateKey) {
-  const dayTasks = [...tasksForDate(dateKey)].sort((a, b) => b.weight - a.weight);
+  const dayTasks = tasksForDate(dateKey)
+    .filter(t => !isFrequentRecurring(t))
+    .sort((a, b) => b.weight - a.weight);
   const { percent } = computeScore(dayTasks);
 
   const wrap = document.createElement('div');
@@ -575,7 +587,9 @@ function buildUpcomingDayBlock(dateKey) {
 
 function renderUpcoming() {
   const today = todayKey();
-  const futureDates = [...new Set(tasks.filter(t => t.date > today).map(t => t.date))].sort();
+  const futureDates = [...new Set(
+    tasks.filter(t => t.date > today && !isFrequentRecurring(t)).map(t => t.date)
+  )].sort();
   upcomingWrap.hidden = futureDates.length === 0;
   upcomingList.innerHTML = '';
   futureDates.forEach(dateKey => upcomingList.appendChild(buildUpcomingDayBlock(dateKey)));
