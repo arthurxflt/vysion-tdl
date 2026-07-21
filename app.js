@@ -258,18 +258,31 @@ function scoreMessage(percent, hasTasks) {
   return "L'essentiel n'est pas encore fait";
 }
 
-// Undone one-off tasks left behind in the past roll forward to today,
-// so nothing important silently disappears into history unfinished.
+// Undone one-off tasks left behind in the past get a fresh copy on today,
+// bumped one point in importance, so procrastinating makes a task harder
+// to ignore. The original stays put with its real done/undone state, so
+// past days keep an honest score instead of quietly turning into 100%.
 function carryOverUnfinished() {
   const today = todayKey();
-  let changed = false;
-  tasks.forEach(t => {
-    if (!t.recurringId && !t.done && t.date < today) {
-      t.date = today;
-      changed = true;
-    }
+  const toCarry = tasks.filter(t => !t.recurringId && !t.done && !t.carriedToId && t.date < today);
+  if (toCarry.length === 0) return;
+
+  toCarry.forEach(source => {
+    const copy = {
+      id: crypto.randomUUID(),
+      title: source.title,
+      weight: Math.min(source.weight + 1, 10),
+      done: false,
+      date: today,
+      originalDate: source.originalDate,
+      recurringId: null,
+      carriedFromId: source.id,
+      createdAt: new Date().toISOString(),
+    };
+    source.carriedToId = copy.id;
+    tasks.push(copy);
   });
-  if (changed) saveTasks();
+  saveTasks();
 }
 
 // Ensures every active recurring template has a real task instance
