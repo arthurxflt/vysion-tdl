@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pareto-todo-v9';
+const CACHE_NAME = 'pareto-todo-v10';
 const ASSETS = [
   './',
   './index.html',
